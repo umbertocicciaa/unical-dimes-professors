@@ -13,11 +13,7 @@ const TeacherDetail: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [showReviewForm, setShowReviewForm] = useState(false);
 
-  useEffect(() => {
-    loadTeacherData();
-  }, [id]);
-
-  const loadTeacherData = async () => {
+  const loadTeacherData = React.useCallback(async () => {
     try {
       setLoading(true);
       const [teacherResponse, reviewsResponse] = await Promise.all([
@@ -33,7 +29,11 @@ const TeacherDetail: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
+
+  useEffect(() => {
+    loadTeacherData();
+  }, [loadTeacherData]);
 
   const handleReviewSubmitted = () => {
     setShowReviewForm(false);
