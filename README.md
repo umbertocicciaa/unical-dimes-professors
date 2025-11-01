@@ -14,12 +14,14 @@ A modern full-stack web application for anonymous teacher and course reviews. Bu
 ## Tech Stack
 
 ### Frontend
+
 - React 18 with TypeScript
 - React Router for navigation
 - Axios for API communication
 - Modern CSS with responsive design
 
 ### Backend
+
 - Python 3.11
 - FastAPI (modern async API framework)
 - SQLAlchemy (ORM)
@@ -27,12 +29,13 @@ A modern full-stack web application for anonymous teacher and course reviews. Bu
 - Pydantic for data validation
 
 ### Infrastructure
+
 - Docker & Docker Compose
 - PostgreSQL 15
 
 ## Project Structure
 
-```
+```plain txt
 unical-dimes-professors/
 ├── frontend/               # React TypeScript frontend
 │   ├── src/
@@ -62,12 +65,14 @@ unical-dimes-professors/
 ### Installation & Running
 
 1. **Clone the repository**
+
    ```bash
    git clone https://github.com/umbertocicciaa/unical-dimes-professors.git
    cd unical-dimes-professors
    ```
 
 2. **Start the application with Docker Compose**
+
    ```bash
    docker-compose up --build
    ```
@@ -78,15 +83,16 @@ unical-dimes-professors/
    - React frontend on port 3000
 
 3. **Access the application**
-   - Frontend: http://localhost:3000
-   - Backend API: http://localhost:8000
-   - API Documentation: http://localhost:8000/docs
+   - Frontend: <http://localhost:3000>
+   - Backend API: <http://localhost:8000>
+   - API Documentation: <http://localhost:8000/docs>
 
 ### Local Development (without Docker)
 
 #### Backend Setup
 
 1. Create a virtual environment:
+
    ```bash
    cd backend
    python -m venv venv
@@ -94,17 +100,20 @@ unical-dimes-professors/
    ```
 
 2. Install dependencies:
+
    ```bash
    pip install -r requirements.txt
    ```
 
 3. Set up environment variables:
+
    ```bash
    cp .env.example .env
    # Edit .env with your database credentials
    ```
 
 4. Start PostgreSQL (using Docker):
+
    ```bash
    docker run -d \
      --name professors-db \
@@ -116,6 +125,7 @@ unical-dimes-professors/
    ```
 
 5. Run the backend:
+
    ```bash
    uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
    ```
@@ -123,12 +133,14 @@ unical-dimes-professors/
 #### Frontend Setup
 
 1. Install dependencies:
+
    ```bash
    cd frontend
    npm install
    ```
 
 2. Start the development server:
+
    ```bash
    npm start
    ```
@@ -136,16 +148,19 @@ unical-dimes-professors/
 ## API Endpoints
 
 ### Teachers
+
 - `GET /api/teachers` - List all teachers with ratings
 - `GET /api/teachers/{id}` - Get teacher details
 - `POST /api/teachers` - Create a new teacher
 
 ### Courses
+
 - `GET /api/courses` - List all courses
 - `GET /api/courses/{id}` - Get course details
 - `POST /api/courses` - Create a new course
 
 ### Reviews
+
 - `GET /api/reviews` - List all reviews
 - `GET /api/teachers/{teacher_id}/reviews` - Get reviews for a specific teacher
 - `POST /api/reviews` - Create a new review (requires rating 1-5 and description min 10 chars)
@@ -155,6 +170,7 @@ unical-dimes-professors/
 ### Adding a Teacher
 
 1. Use the API to add a teacher:
+
    ```bash
    curl -X POST http://localhost:8000/api/teachers \
      -H "Content-Type: application/json" \
@@ -164,6 +180,7 @@ unical-dimes-professors/
 ### Adding a Course
 
 1. Add a course for a teacher:
+
    ```bash
    curl -X POST http://localhost:8000/api/courses \
      -H "Content-Type: application/json" \
@@ -172,7 +189,7 @@ unical-dimes-professors/
 
 ### Submitting a Review
 
-1. Open the frontend at http://localhost:3000
+1. Open the frontend at <http://localhost:3000>
 2. Click on a teacher card
 3. Click "Add Review"
 4. Select a course, rate (1-5 stars), and write a description (min 10 characters)
@@ -181,18 +198,21 @@ unical-dimes-professors/
 ## Database Schema
 
 ### Teachers
+
 - `id`: Primary key
 - `name`: Teacher name
 - `department`: Department name (optional)
 - `created_at`: Timestamp
 
 ### Courses
+
 - `id`: Primary key
 - `name`: Course name
 - `teacher_id`: Foreign key to teachers
 - `created_at`: Timestamp
 
 ### Reviews
+
 - `id`: Primary key
 - `teacher_id`: Foreign key to teachers
 - `course_id`: Foreign key to courses
@@ -205,12 +225,14 @@ unical-dimes-professors/
 ### Running Tests
 
 Backend:
+
 ```bash
 cd backend
 pytest
 ```
 
 Frontend:
+
 ```bash
 cd frontend
 npm test
@@ -219,6 +241,7 @@ npm test
 ### Code Style
 
 Backend:
+
 ```bash
 cd backend
 black app/
@@ -226,6 +249,7 @@ flake8 app/
 ```
 
 Frontend:
+
 ```bash
 cd frontend
 npm run lint
