@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, status, Response
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import func
@@ -65,6 +65,33 @@ def create_teacher(teacher: schemas.TeacherCreate, db: Session = Depends(get_db)
     db.refresh(db_teacher)
     return db_teacher
 
+@app.put("/api/teachers/{teacher_id}", response_model=schemas.Teacher)
+def update_teacher(teacher_id: int, teacher_update: schemas.TeacherUpdate, db: Session = Depends(get_db)):
+    teacher = db.query(models.Teacher).filter(models.Teacher.id == teacher_id).first()
+    if not teacher:
+        raise HTTPException(status_code=404, detail="Teacher not found")
+
+    update_data = teacher_update.dict(exclude_unset=True)
+    if not update_data:
+        return teacher
+
+    for key, value in update_data.items():
+        setattr(teacher, key, value)
+
+    db.commit()
+    db.refresh(teacher)
+    return teacher
+
+@app.delete("/api/teachers/{teacher_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_teacher(teacher_id: int, db: Session = Depends(get_db)):
+    teacher = db.query(models.Teacher).filter(models.Teacher.id == teacher_id).first()
+    if not teacher:
+        raise HTTPException(status_code=404, detail="Teacher not found")
+
+    db.delete(teacher)
+    db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
 # Course endpoints
 @app.get("/api/courses", response_model=List[schemas.Course])
 def get_courses(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
@@ -90,11 +117,53 @@ def create_course(course: schemas.CourseCreate, db: Session = Depends(get_db)):
     db.refresh(db_course)
     return db_course
 
+@app.put("/api/courses/{course_id}", response_model=schemas.Course)
+def update_course(course_id: int, course_update: schemas.CourseUpdate, db: Session = Depends(get_db)):
+    course = db.query(models.Course).filter(models.Course.id == course_id).first()
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+
+    update_data = course_update.dict(exclude_unset=True)
+    if "teacher_id" in update_data:
+        new_teacher_id = update_data["teacher_id"]
+        if new_teacher_id is None:
+            raise HTTPException(status_code=422, detail="teacher_id cannot be null")
+        teacher = db.query(models.Teacher).filter(models.Teacher.id == new_teacher_id).first()
+        if not teacher:
+            raise HTTPException(status_code=404, detail="Teacher not found")
+
+    if not update_data:
+        return course
+
+    for key, value in update_data.items():
+        setattr(course, key, value)
+
+    db.commit()
+    db.refresh(course)
+    return course
+
+@app.delete("/api/courses/{course_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_course(course_id: int, db: Session = Depends(get_db)):
+    course = db.query(models.Course).filter(models.Course.id == course_id).first()
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+
+    db.delete(course)
+    db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
 # Review endpoints
 @app.get("/api/reviews", response_model=List[schemas.Review])
 def get_reviews(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     reviews = db.query(models.Review).offset(skip).limit(limit).all()
     return reviews
+
+@app.get("/api/reviews/{review_id}", response_model=schemas.Review)
+def get_review(review_id: int, db: Session = Depends(get_db)):
+    review = db.query(models.Review).filter(models.Review.id == review_id).first()
+    if not review:
+        raise HTTPException(status_code=404, detail="Review not found")
+    return review
 
 @app.get("/api/teachers/{teacher_id}/reviews", response_model=List[schemas.Review])
 def get_teacher_reviews(teacher_id: int, db: Session = Depends(get_db)):
@@ -116,3 +185,46 @@ def create_review(review: schemas.ReviewCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(db_review)
     return db_review
+
+@app.put("/api/reviews/{review_id}", response_model=schemas.Review)
+def update_review(review_id: int, review_update: schemas.ReviewUpdate, db: Session = Depends(get_db)):
+    review = db.query(models.Review).filter(models.Review.id == review_id).first()
+    if not review:
+        raise HTTPException(status_code=404, detail="Review not found")
+
+    update_data = review_update.dict(exclude_unset=True)
+    if "teacher_id" in update_data:
+        new_teacher_id = update_data["teacher_id"]
+        if new_teacher_id is None:
+            raise HTTPException(status_code=422, detail="teacher_id cannot be null")
+        teacher = db.query(models.Teacher).filter(models.Teacher.id == new_teacher_id).first()
+        if not teacher:
+            raise HTTPException(status_code=404, detail="Teacher not found")
+
+    if "course_id" in update_data:
+        new_course_id = update_data["course_id"]
+        if new_course_id is None:
+            raise HTTPException(status_code=422, detail="course_id cannot be null")
+        course = db.query(models.Course).filter(models.Course.id == new_course_id).first()
+        if not course:
+            raise HTTPException(status_code=404, detail="Course not found")
+
+    if not update_data:
+        return review
+
+    for key, value in update_data.items():
+        setattr(review, key, value)
+
+    db.commit()
+    db.refresh(review)
+    return review
+
+@app.delete("/api/reviews/{review_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_review(review_id: int, db: Session = Depends(get_db)):
+    review = db.query(models.Review).filter(models.Review.id == review_id).first()
+    if not review:
+        raise HTTPException(status_code=404, detail="Review not found")
+
+    db.delete(review)
+    db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

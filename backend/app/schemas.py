@@ -8,6 +8,10 @@ class CourseBase(BaseModel):
 class CourseCreate(CourseBase):
     teacher_id: int
 
+class CourseUpdate(BaseModel):
+    name: Optional[str] = None
+    teacher_id: Optional[int] = None
+
 class Course(CourseBase):
     id: int
     teacher_id: int
@@ -24,6 +28,12 @@ class ReviewCreate(ReviewBase):
     teacher_id: int
     course_id: int
 
+class ReviewUpdate(BaseModel):
+    rating: Optional[int] = Field(default=None, ge=1, le=5, description="Rating must be between 1 and 5")
+    description: Optional[str] = Field(default=None, min_length=10, description="Description must be at least 10 characters")
+    teacher_id: Optional[int] = None
+    course_id: Optional[int] = None
+
 class Review(ReviewBase):
     id: int
     teacher_id: int
@@ -39,6 +49,10 @@ class TeacherBase(BaseModel):
 
 class TeacherCreate(TeacherBase):
     pass
+
+class TeacherUpdate(BaseModel):
+    name: Optional[str] = None
+    department: Optional[str] = None
 
 class TeacherWithStats(TeacherBase):
     id: int
