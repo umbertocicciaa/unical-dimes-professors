@@ -3,10 +3,22 @@ Script to seed the database with sample data for testing
 """
 import sys
 import os
+from typing import Dict
+
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from app.database import SessionLocal, engine
-from app.models import Base, Teacher, Course, Review
+from app.models import Base, Teacher, Course, Review, Role, User
+from app.security import hash_password
+
+DEFAULT_ROLES: Dict[str, str] = {
+    "admin": "Full administrative access",
+    "editor": "Manage content but no user administration",
+    "viewer": "Read-only access to catalog resources",
+}
+
+DEFAULT_ADMIN_EMAIL = os.getenv("DEFAULT_ADMIN_EMAIL", "admin@example.com")
+DEFAULT_ADMIN_PASSWORD = os.getenv("DEFAULT_ADMIN_PASSWORD", "ChangeMe!12345!!")
 
 def seed_database():
     # Create tables
@@ -15,6 +27,28 @@ def seed_database():
     db = SessionLocal()
     
     try:
+        for name, description in DEFAULT_ROLES.items():
+            role = db.query(Role).filter(Role.name == name).first()
+            if not role:
+                db.add(Role(name=name, description=description))
+        db.commit()
+
+        admin = db.query(User).filter(User.email == DEFAULT_ADMIN_EMAIL).first()
+        if not admin:
+            admin_role = db.query(Role).filter(Role.name == "admin").one()
+            editor_role = db.query(Role).filter(Role.name == "editor").one()
+            viewer_role = db.query(Role).filter(Role.name == "viewer").one()
+
+            admin = User(
+                email=DEFAULT_ADMIN_EMAIL,
+                password_hash=hash_password(DEFAULT_ADMIN_PASSWORD),
+            )
+            admin.roles.extend([admin_role, editor_role, viewer_role])
+            db.add(admin)
+            db.commit()
+            db.refresh(admin)
+            print(f"✓ Created default admin user with email '{DEFAULT_ADMIN_EMAIL}'")
+
         # Check if data already exists
         existing_teachers = db.query(Teacher).count()
         if existing_teachers > 0:

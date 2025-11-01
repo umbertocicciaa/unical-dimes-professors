@@ -133,6 +133,18 @@
   background: #1976d2;
 }
 
+.link-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+.review-permission-hint {
+  color: #999;
+  font-size: 0.9rem;
+}
+
 .reviews-list {
   display: flex;
   flex-direction: column;

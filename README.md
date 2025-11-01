@@ -5,7 +5,7 @@ A modern full-stack web application for anonymous teacher and course reviews. Bu
 ## Features
 
 - 🌟 **Star Rating System**: 1-5 star ratings based on average votes
-- 📝 **Anonymous Reviews**: Submit reviews anonymously without user accounts
+- 🔐 **Secure Authentication**: Email + password login with Argon2 hashing and JWT access tokens
 - 🎓 **Teacher & Course Management**: Browse teachers and their courses
 - 💬 **Mandatory Descriptions**: All reviews require detailed descriptions (minimum 10 characters)
 - 📊 **Average Ratings**: Automatic calculation of average ratings
@@ -109,7 +109,8 @@ unical-dimes-professors/
 
    ```bash
    cp .env.example .env
-   # Edit .env with your database credentials
+   # Edit .env with your database credentials and security secrets:
+   # AUTH_SECRET_KEY, AUTH_REFRESH_SECRET, ACCESS_TOKEN_EXPIRE_MINUTES, REFRESH_TOKEN_EXPIRE_DAYS
    ```
 
 4. Start PostgreSQL (using Docker):
@@ -124,7 +125,14 @@ unical-dimes-professors/
      postgres:15
    ```
 
-5. Run the backend:
+5. Apply database migrations and seed roles/users:
+
+   ```bash
+   alembic upgrade head
+   python seed_data.py  # optional, creates demo data and a default admin user
+   ```
+
+6. Run the backend:
 
    ```bash
    uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
@@ -147,23 +155,45 @@ unical-dimes-professors/
 
 ## API Endpoints
 
+### Authentication
+
+- `POST /auth/register` — Self-service registration (assigns the `viewer` role)
+- `POST /auth/login` — Exchange credentials for access and refresh tokens
+- `POST /auth/refresh` — Rotate refresh token and issue a new access token
+- `POST /auth/logout` — Revoke the active refresh token
+- `GET /auth/me` — Return the authenticated user profile and roles
+
+> **Default roles**
+>
+> - `admin`: full CRUD and user management  
+> - `editor`: manage teachers, courses, and reviews  
+> - `viewer`: read catalog data and submit reviews  
+>
+> The seed script provisions an initial admin account using `DEFAULT_ADMIN_EMAIL` and `DEFAULT_ADMIN_PASSWORD`.
+
 ### Teachers
 
-- `GET /api/teachers` - List all teachers with ratings
-- `GET /api/teachers/{id}` - Get teacher details
-- `POST /api/teachers` - Create a new teacher
+- `GET /api/teachers` — List all teachers with ratings
+- `GET /api/teachers/{id}` — Get teacher details
+- `POST /api/teachers` — Create a new teacher (**requires** `admin` or `editor`)
+- `PUT /api/teachers/{id}` — Update a teacher (**requires** `admin` or `editor`)
+- `DELETE /api/teachers/{id}` — Delete a teacher (**requires** `admin`)
 
 ### Courses
 
-- `GET /api/courses` - List all courses
-- `GET /api/courses/{id}` - Get course details
-- `POST /api/courses` - Create a new course
+- `GET /api/courses` — List all courses
+- `GET /api/courses/{id}` — Get course details
+- `POST /api/courses` — Create a new course (**requires** `admin` or `editor`)
+- `PUT /api/courses/{id}` — Update a course (**requires** `admin` or `editor`)
+- `DELETE /api/courses/{id}` — Delete a course (**requires** `admin`)
 
 ### Reviews
 
-- `GET /api/reviews` - List all reviews
-- `GET /api/teachers/{teacher_id}/reviews` - Get reviews for a specific teacher
-- `POST /api/reviews` - Create a new review (requires rating 1-5 and description min 10 chars)
+- `GET /api/reviews` — List all reviews
+- `GET /api/teachers/{teacher_id}/reviews` — Get reviews for a specific teacher
+- `POST /api/reviews` — Create a new review (requires login; `viewer`+)
+- `PUT /api/reviews/{id}` — Update a review (**requires** `admin` or `editor`)
+- `DELETE /api/reviews/{id}` — Delete a review (**requires** `admin`)
 
 ## Usage Guide
 

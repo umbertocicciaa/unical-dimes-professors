@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { apiClient, Teacher, Review, Course } from '../api/client';
 import StarRating from './StarRating';
 import ReviewForm from './ReviewForm';
+import { useAuth } from '../context/AuthContext';
 import './TeacherDetail.css';
 
 const TeacherDetail: React.FC = () => {
@@ -12,6 +13,8 @@ const TeacherDetail: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showReviewForm, setShowReviewForm] = useState(false);
+  const { user, hasRole } = useAuth();
+  const canSubmitReview = user ? hasRole('viewer', 'editor', 'admin') : false;
 
   const loadTeacherData = React.useCallback(async () => {
     try {
@@ -34,6 +37,12 @@ const TeacherDetail: React.FC = () => {
   useEffect(() => {
     loadTeacherData();
   }, [loadTeacherData]);
+
+  useEffect(() => {
+    if (!canSubmitReview) {
+      setShowReviewForm(false);
+    }
+  }, [canSubmitReview]);
 
   const handleReviewSubmitted = () => {
     setShowReviewForm(false);
@@ -102,15 +111,23 @@ const TeacherDetail: React.FC = () => {
       <div className="reviews-section">
         <div className="reviews-header">
           <h2>Reviews</h2>
-          <button 
-            className="add-review-btn"
-            onClick={() => setShowReviewForm(!showReviewForm)}
-          >
-            {showReviewForm ? 'Cancel' : '+ Add Review'}
-          </button>
+          {canSubmitReview ? (
+            <button
+              className="add-review-btn"
+              onClick={() => setShowReviewForm(!showReviewForm)}
+            >
+              {showReviewForm ? 'Cancel' : '+ Add Review'}
+            </button>
+          ) : user ? (
+            <span className="review-permission-hint">You need elevated access to submit reviews.</span>
+          ) : (
+            <Link to="/login" className="add-review-btn link-button">
+              Login to add a review
+            </Link>
+          )}
         </div>
 
-        {showReviewForm && (
+        {showReviewForm && canSubmitReview && (
           <ReviewForm
             teacher={teacher}
             onSubmit={handleReviewSubmitted}

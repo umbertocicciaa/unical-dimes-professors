@@ -48,7 +48,11 @@ const ReviewForm: React.FC<ReviewFormProps> = ({ teacher, onSubmit, onCancel }) 
       await apiClient.createReview(reviewData);
       onSubmit();
     } catch (err: any) {
-      if (err.response?.data?.detail) {
+      if (err.response?.status === 401) {
+        setError('Your session has expired. Please log in again.');
+      } else if (err.response?.status === 403) {
+        setError('You do not have permission to submit reviews.');
+      } else if (err.response?.data?.detail) {
         setError(err.response.data.detail);
       } else {
         setError('Failed to submit review. Please try again.');

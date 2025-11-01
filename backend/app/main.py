@@ -5,6 +5,8 @@ from sqlalchemy import func
 from typing import List
 from app import models, schemas
 from app.database import engine, get_db
+from app.auth import router as auth_router
+from app.security import require_roles
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -17,6 +19,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(auth_router)
 
 @app.get("/")
 def read_root():
@@ -57,7 +61,7 @@ def get_teacher(teacher_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Teacher not found")
     return teacher
 
-@app.post("/api/teachers", response_model=schemas.Teacher)
+@app.post("/api/teachers", response_model=schemas.Teacher, dependencies=[Depends(require_roles("admin", "editor"))])
 def create_teacher(teacher: schemas.TeacherCreate, db: Session = Depends(get_db)):
     db_teacher = models.Teacher(**teacher.dict())
     db.add(db_teacher)
@@ -65,7 +69,7 @@ def create_teacher(teacher: schemas.TeacherCreate, db: Session = Depends(get_db)
     db.refresh(db_teacher)
     return db_teacher
 
-@app.put("/api/teachers/{teacher_id}", response_model=schemas.Teacher)
+@app.put("/api/teachers/{teacher_id}", response_model=schemas.Teacher, dependencies=[Depends(require_roles("admin", "editor"))])
 def update_teacher(teacher_id: int, teacher_update: schemas.TeacherUpdate, db: Session = Depends(get_db)):
     teacher = db.query(models.Teacher).filter(models.Teacher.id == teacher_id).first()
     if not teacher:
@@ -82,7 +86,7 @@ def update_teacher(teacher_id: int, teacher_update: schemas.TeacherUpdate, db: S
     db.refresh(teacher)
     return teacher
 
-@app.delete("/api/teachers/{teacher_id}", status_code=status.HTTP_204_NO_CONTENT)
+@app.delete("/api/teachers/{teacher_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(require_roles("admin"))])
 def delete_teacher(teacher_id: int, db: Session = Depends(get_db)):
     teacher = db.query(models.Teacher).filter(models.Teacher.id == teacher_id).first()
     if not teacher:
@@ -105,7 +109,7 @@ def get_course(course_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Course not found")
     return course
 
-@app.post("/api/courses", response_model=schemas.Course)
+@app.post("/api/courses", response_model=schemas.Course, dependencies=[Depends(require_roles("admin", "editor"))])
 def create_course(course: schemas.CourseCreate, db: Session = Depends(get_db)):
     teacher = db.query(models.Teacher).filter(models.Teacher.id == course.teacher_id).first()
     if not teacher:
@@ -117,7 +121,7 @@ def create_course(course: schemas.CourseCreate, db: Session = Depends(get_db)):
     db.refresh(db_course)
     return db_course
 
-@app.put("/api/courses/{course_id}", response_model=schemas.Course)
+@app.put("/api/courses/{course_id}", response_model=schemas.Course, dependencies=[Depends(require_roles("admin", "editor"))])
 def update_course(course_id: int, course_update: schemas.CourseUpdate, db: Session = Depends(get_db)):
     course = db.query(models.Course).filter(models.Course.id == course_id).first()
     if not course:
@@ -142,7 +146,7 @@ def update_course(course_id: int, course_update: schemas.CourseUpdate, db: Sessi
     db.refresh(course)
     return course
 
-@app.delete("/api/courses/{course_id}", status_code=status.HTTP_204_NO_CONTENT)
+@app.delete("/api/courses/{course_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(require_roles("admin"))])
 def delete_course(course_id: int, db: Session = Depends(get_db)):
     course = db.query(models.Course).filter(models.Course.id == course_id).first()
     if not course:
@@ -170,7 +174,7 @@ def get_teacher_reviews(teacher_id: int, db: Session = Depends(get_db)):
     reviews = db.query(models.Review).filter(models.Review.teacher_id == teacher_id).all()
     return reviews
 
-@app.post("/api/reviews", response_model=schemas.Review)
+@app.post("/api/reviews", response_model=schemas.Review, dependencies=[Depends(require_roles("admin", "editor", "viewer"))])
 def create_review(review: schemas.ReviewCreate, db: Session = Depends(get_db)):
     teacher = db.query(models.Teacher).filter(models.Teacher.id == review.teacher_id).first()
     if not teacher:
@@ -186,7 +190,7 @@ def create_review(review: schemas.ReviewCreate, db: Session = Depends(get_db)):
     db.refresh(db_review)
     return db_review
 
-@app.put("/api/reviews/{review_id}", response_model=schemas.Review)
+@app.put("/api/reviews/{review_id}", response_model=schemas.Review, dependencies=[Depends(require_roles("admin", "editor"))])
 def update_review(review_id: int, review_update: schemas.ReviewUpdate, db: Session = Depends(get_db)):
     review = db.query(models.Review).filter(models.Review.id == review_id).first()
     if not review:
@@ -219,7 +223,7 @@ def update_review(review_id: int, review_update: schemas.ReviewUpdate, db: Sessi
     db.refresh(review)
     return review
 
-@app.delete("/api/reviews/{review_id}", status_code=status.HTTP_204_NO_CONTENT)
+@app.delete("/api/reviews/{review_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(require_roles("admin"))])
 def delete_review(review_id: int, db: Session = Depends(get_db)):
     review = db.query(models.Review).filter(models.Review.id == review_id).first()
     if not review:

@@ -1,6 +1,7 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, EmailStr
 from datetime import datetime
 from typing import Optional, List
+from app.config import PASSWORD_MIN_LENGTH
 
 class CourseBase(BaseModel):
     name: str
@@ -72,3 +73,58 @@ class Teacher(TeacherBase):
 
     class Config:
         from_attributes = True
+
+
+class RoleBase(BaseModel):
+    name: str
+    description: Optional[str] = None
+
+
+class Role(RoleBase):
+    id: int
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class UserBase(BaseModel):
+    email: EmailStr
+
+
+class UserCreate(UserBase):
+    password: str = Field(min_length=PASSWORD_MIN_LENGTH)
+
+
+class UserRegister(UserCreate):
+    pass
+
+
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
+
+
+class User(UserBase):
+    id: int
+    is_active: bool
+    created_at: datetime
+    updated_at: datetime
+    roles: List[Role] = []
+
+    class Config:
+        from_attributes = True
+
+
+class TokenResponse(BaseModel):
+    access_token: str
+    refresh_token: str
+    token_type: str = "Bearer"
+
+
+class RefreshRequest(BaseModel):
+    refresh_token: str = Field(min_length=32)
+
+
+class LogoutRequest(RefreshRequest):
+    pass
