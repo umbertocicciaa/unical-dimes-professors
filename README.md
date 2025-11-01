@@ -7,6 +7,7 @@ A modern full-stack web application for anonymous teacher and course reviews. Bu
 - 🌟 **Star Rating System**: 1-5 star ratings based on average votes
 - 🔐 **Secure Authentication**: Email + password login with Argon2 hashing and JWT access tokens
 - 🎓 **Teacher & Course Management**: Browse teachers and their courses
+- 🛠 **Admin Dashboard**: Role-gated UI for managing teachers, courses, reviews, and user roles
 - 💬 **Mandatory Descriptions**: All reviews require detailed descriptions (minimum 10 characters)
 - 📊 **Average Ratings**: Automatic calculation of average ratings
 - 🐳 **Docker Support**: Complete Docker setup for local development
@@ -195,6 +196,12 @@ unical-dimes-professors/
 - `PUT /api/reviews/{id}` — Update a review (**requires** `admin` or `editor`)
 - `DELETE /api/reviews/{id}` — Delete a review (**requires** `admin`)
 
+### Admin
+
+- `GET /admin/roles` — List configured roles (**requires** `admin`)
+- `GET /admin/users` — List users with role assignments (**requires** `admin`)
+- `PUT /admin/users/{id}` — Update user status and role memberships (**requires** `admin`)
+
 ## Usage Guide
 
 ### Adding a Teacher
@@ -224,6 +231,13 @@ unical-dimes-professors/
 3. Click "Add Review"
 4. Select a course, rate (1-5 stars), and write a description (min 10 characters)
 5. Submit the review
+
+### Admin Dashboard
+
+1. Sign in with an account that has the `admin` role (the seed script creates `DEFAULT_ADMIN_EMAIL` with full access).
+2. Navigate to <http://localhost:3000/admin>.
+3. Use the tabbed interface to add/edit/delete teachers, courses, and reviews.
+4. Manage users by toggling roles and account status—changes are persisted via the `/admin` API.
 
 ## Database Schema
 

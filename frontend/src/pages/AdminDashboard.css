@@ -1,0 +1,238 @@
+.admin-dashboard {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 4rem;
+}
+
+.admin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.admin-header h1 {
+  margin: 0;
+  font-size: 2rem;
+  color: #1a1a1a;
+}
+
+.admin-header p {
+  color: #666;
+  margin-top: 0.4rem;
+}
+
+.admin-tabs {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.admin-tabs .tab {
+  border: 1px solid #d0d0d0;
+  border-radius: 999px;
+  padding: 0.55rem 1.5rem;
+  background: #fff;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.admin-tabs .tab:hover {
+  border-color: #1976d2;
+  color: #1976d2;
+}
+
+.admin-tabs .tab.active {
+  background: #1976d2;
+  border-color: #1976d2;
+  color: #fff;
+}
+
+.admin-alert {
+  padding: 0.85rem 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.admin-alert.success {
+  background: #e8f5e9;
+  color: #1b5e20;
+}
+
+.admin-alert.error {
+  background: #ffebee;
+  color: #b71c1c;
+}
+
+.admin-panel {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  padding: 1.75rem;
+  margin-bottom: 2rem;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.panel-header h2 {
+  margin: 0;
+  font-size: 1.4rem;
+  color: #1f1f1f;
+}
+
+.inline-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+  align-items: end;
+  margin-bottom: 1.5rem;
+}
+
+.inline-form label {
+  display: block;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 0.4rem;
+}
+
+.inline-form input,
+.inline-form select,
+.inline-form textarea {
+  width: 100%;
+  border: 1px solid #d0d0d0;
+  border-radius: 8px;
+  padding: 0.65rem;
+  font-size: 0.95rem;
+  transition: border 0.2s ease, box-shadow 0.2s ease;
+}
+
+.inline-form input:focus,
+.inline-form select:focus,
+.inline-form textarea:focus {
+  border-color: #1976d2;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.15);
+}
+
+.admin-table {
+  overflow-x: auto;
+}
+
+.admin-table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.admin-table th,
+.admin-table td {
+  padding: 0.85rem 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid #f0f0f0;
+  vertical-align: top;
+}
+
+.admin-table th {
+  font-weight: 600;
+  color: #333;
+  background: #fafafa;
+}
+
+.admin-table tr:hover td {
+  background: rgba(25, 118, 210, 0.04);
+}
+
+.actions-cell {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.primary-btn,
+.outline-btn,
+.danger-btn {
+  border-radius: 8px;
+  padding: 0.5rem 1.1rem;
+  font-size: 0.95rem;
+  cursor: pointer;
+  border: none;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.primary-btn {
+  background: #1976d2;
+  color: #fff;
+}
+
+.primary-btn:hover {
+  background: #0f5aa5;
+}
+
+.outline-btn {
+  border: 1px solid #1976d2;
+  color: #1976d2;
+  background: transparent;
+}
+
+.outline-btn:hover {
+  background: rgba(25, 118, 210, 0.08);
+}
+
+.danger-btn {
+  background: #e53935;
+  color: #fff;
+}
+
+.danger-btn:hover {
+  background: #c62828;
+}
+
+.role-checkbox-group {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.5rem;
+}
+
+.role-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+}
+
+.role-summary {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 500;
+}
+
+.toggle input {
+  transform: scale(1.2);
+}
+
+.review-text {
+  max-width: 420px;
+  white-space: pre-wrap;
+}
+
+@media (max-width: 768px) {
+  .actions-cell {
+    flex-direction: column;
+  }
+
+  .admin-tabs {
+    gap: 0.5rem;
+  }
+}

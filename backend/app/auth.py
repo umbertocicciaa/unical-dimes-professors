@@ -1,10 +1,9 @@
-from typing import Dict, Optional
-
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
 from app import models, schemas
 from app.database import get_db
+from app.roles import DEFAULT_REGISTER_ROLE, ensure_default_roles, get_or_create_role
 from app.security import (
     create_access_token,
     decode_refresh_token,
@@ -19,32 +18,9 @@ from app.security import (
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
-DEFAULT_ROLES: Dict[str, str] = {
-    "admin": "Full administrative access",
-    "editor": "Manage content but no user administration",
-    "viewer": "Read-only access to catalog resources",
-}
-DEFAULT_REGISTER_ROLE = "viewer"
-
-
-def _get_or_create_role(db: Session, role_name: str, description: Optional[str] = None) -> models.Role:
-    role = db.query(models.Role).filter(models.Role.name == role_name).first()
-    if role:
-        return role
-    role = models.Role(name=role_name, description=description or DEFAULT_ROLES.get(role_name))
-    db.add(role)
-    db.flush()
-    return role
-
-
-def _ensure_default_roles(db: Session) -> None:
-    for name, description in DEFAULT_ROLES.items():
-        _get_or_create_role(db, name, description)
-
-
 @router.post("/register", response_model=schemas.User, status_code=status.HTTP_201_CREATED)
 def register_user(payload: schemas.UserRegister, db: Session = Depends(get_db)) -> schemas.User:
-    _ensure_default_roles(db)
+    ensure_default_roles(db)
 
     existing = db.query(models.User).filter(models.User.email == payload.email).first()
     if existing:
@@ -54,7 +30,7 @@ def register_user(payload: schemas.UserRegister, db: Session = Depends(get_db)) 
         email=payload.email,
         password_hash=hash_password(payload.password),
     )
-    default_role = _get_or_create_role(db, DEFAULT_REGISTER_ROLE)
+    default_role = get_or_create_role(db, DEFAULT_REGISTER_ROLE)
     user.roles.append(default_role)
 
     db.add(user)

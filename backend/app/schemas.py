@@ -128,3 +128,8 @@ class RefreshRequest(BaseModel):
 
 class LogoutRequest(RefreshRequest):
     pass
+
+
+class UserAdminUpdate(BaseModel):
+    role_names: Optional[List[str]] = None
+    is_active: Optional[bool] = None

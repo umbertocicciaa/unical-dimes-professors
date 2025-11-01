@@ -4,11 +4,13 @@ import TeacherList from './components/TeacherList';
 import TeacherDetail from './components/TeacherDetail';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import AdminDashboard from './pages/AdminDashboard';
+import RequireRole from './components/RequireRole';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import './App.css';
 
 const Header: React.FC = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, hasRole } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -24,6 +26,7 @@ const Header: React.FC = () => {
         </Link>
         <nav className="app-header__nav">
           <Link to="/">Teachers</Link>
+          {user && hasRole('admin') && <Link to="/admin">Admin</Link>}
         </nav>
         <div className="app-header__spacer" />
         {user ? (
@@ -59,6 +62,14 @@ const AppRoutes: React.FC = () => {
       <Route path="/teacher/:id" element={<TeacherDetail />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
+      <Route
+        path="/admin"
+        element={
+          <RequireRole roles={['admin']}>
+            <AdminDashboard />
+          </RequireRole>
+        }
+      />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

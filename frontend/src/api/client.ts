@@ -76,9 +76,31 @@ export interface CreateTeacher {
   department?: string;
 }
 
+export interface UpdateTeacher {
+  name?: string;
+  department?: string;
+}
+
 export interface CreateCourse {
   name: string;
   teacher_id: number;
+}
+
+export interface UpdateCourse {
+  name?: string;
+  teacher_id?: number;
+}
+
+export interface UpdateReview {
+  rating?: number;
+  description?: string;
+  teacher_id?: number;
+  course_id?: number;
+}
+
+export interface UserAdminUpdate {
+  role_names?: string[];
+  is_active?: boolean;
 }
 
 export const api = axios.create({
@@ -108,12 +130,25 @@ export const apiClient = {
   getTeachers: () => api.get<Teacher[]>('/api/teachers'),
   getTeacher: (id: number) => api.get<Teacher>(`/api/teachers/${id}`),
   createTeacher: (data: CreateTeacher) => api.post<Teacher>('/api/teachers', data),
+  updateTeacher: (id: number, data: UpdateTeacher) => api.put<Teacher>(`/api/teachers/${id}`, data),
+  deleteTeacher: (id: number) => api.delete<void>(`/api/teachers/${id}`),
 
   getCourses: () => api.get<Course[]>('/api/courses'),
   getCourse: (id: number) => api.get<Course>(`/api/courses/${id}`),
   createCourse: (data: CreateCourse) => api.post<Course>('/api/courses', data),
+  updateCourse: (id: number, data: UpdateCourse) => api.put<Course>(`/api/courses/${id}`, data),
+  deleteCourse: (id: number) => api.delete<void>(`/api/courses/${id}`),
 
   getReviews: () => api.get<Review[]>('/api/reviews'),
   getTeacherReviews: (teacherId: number) => api.get<Review[]>(`/api/teachers/${teacherId}/reviews`),
   createReview: (data: CreateReview) => api.post<Review>('/api/reviews', data),
+  updateReview: (id: number, data: UpdateReview) => api.put<Review>(`/api/reviews/${id}`, data),
+  deleteReview: (id: number) => api.delete<void>(`/api/reviews/${id}`),
+};
+
+export const adminApi = {
+  getRoles: () => api.get<Role[]>('/admin/roles'),
+  getUsers: (includeInactive = true) =>
+    api.get<AuthenticatedUser[]>(`/admin/users`, { params: { include_inactive: includeInactive } }),
+  updateUser: (userId: number, data: UserAdminUpdate) => api.put<AuthenticatedUser>(`/admin/users/${userId}`, data),
 };
