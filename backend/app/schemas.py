@@ -1,6 +1,9 @@
-from pydantic import BaseModel, Field, EmailStr
+from pydantic import BaseModel, Field, EmailStr, ConfigDict
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List, Dict, TYPE_CHECKING
+
+if TYPE_CHECKING:  # pragma: no cover - used for type hints only
+    from app.services.moderation import ModerationVerdict
 from app.config import PASSWORD_MIN_LENGTH
 
 class CourseBase(BaseModel):
@@ -40,9 +43,43 @@ class Review(ReviewBase):
     teacher_id: int
     course_id: int
     created_at: datetime
+    moderation_allowed: bool = True
+    moderation_blocked_reasons: Optional[List[str]] = None
+    moderation_scores: Optional[Dict[str, float]] = None
+    moderation_model_version: Optional[str] = None
+    moderation_message: Optional[str] = None
 
     class Config:
         from_attributes = True
+
+
+class ReviewModerationRequest(BaseModel):
+    teacher_id: int
+    course_id: int
+    text: str = Field(min_length=5, description="Proposed review text")
+    rating: Optional[int] = Field(default=None, ge=1, le=5)
+
+
+class ReviewModerationResponse(BaseModel):
+    allowed: bool
+    blocked_reasons: List[str] = Field(default_factory=list, alias="blockedReasons")
+    message: str
+    scores: Dict[str, float] = Field(default_factory=dict)
+    model_version: str = Field(alias="modelVersion")
+    suggestion: Optional[str] = None
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    @classmethod
+    def from_verdict(cls, verdict: "ModerationVerdict") -> "ReviewModerationResponse":
+        return cls(
+            allowed=verdict.allowed,
+            blocked_reasons=verdict.blocked_reasons,
+            message=verdict.message,
+            scores=verdict.scores,
+            model_version=verdict.model_version,
+            suggestion=verdict.suggestion,
+        )
 
 class TeacherBase(BaseModel):
     name: str

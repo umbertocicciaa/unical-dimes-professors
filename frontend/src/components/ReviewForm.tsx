@@ -1,5 +1,12 @@
 import React, { useState } from 'react';
-import { apiClient, Teacher, CreateReview, Course } from '../api/client';
+import {
+  apiClient,
+  Teacher,
+  CreateReview,
+  Course,
+  ReviewModerationRequest,
+  ReviewModerationVerdict,
+} from '../api/client';
 import StarRating from './StarRating';
 import './ReviewForm.css';
 
@@ -15,6 +22,13 @@ const ReviewForm: React.FC<ReviewFormProps> = ({ teacher, onSubmit, onCancel }) 
   const [description, setDescription] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [moderationFeedback, setModerationFeedback] = useState<ReviewModerationVerdict | null>(null);
+
+  const resetModerationFeedback = () => {
+    if (moderationFeedback) {
+      setModerationFeedback(null);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,6 +51,7 @@ const ReviewForm: React.FC<ReviewFormProps> = ({ teacher, onSubmit, onCancel }) 
     try {
       setSubmitting(true);
       setError(null);
+      resetModerationFeedback();
 
       const reviewData: CreateReview = {
         teacher_id: teacher.id,
@@ -45,10 +60,29 @@ const ReviewForm: React.FC<ReviewFormProps> = ({ teacher, onSubmit, onCancel }) 
         description: description.trim(),
       };
 
+      const moderationPayload: ReviewModerationRequest = {
+        teacher_id: teacher.id,
+        course_id: Number(courseId),
+        text: description.trim(),
+        rating,
+      };
+
+      const { data: moderationVerdict } = await apiClient.moderateReview(moderationPayload);
+      if (!moderationVerdict.allowed) {
+        setModerationFeedback(moderationVerdict);
+        return;
+      }
+
       await apiClient.createReview(reviewData);
       onSubmit();
     } catch (err: any) {
-      if (err.response?.status === 401) {
+      const detail: ReviewModerationVerdict | undefined = err.response?.data?.detail;
+
+      if (err.response?.status === 422 && detail?.allowed === false) {
+        setModerationFeedback(detail);
+      } else if (err.response?.status === 400 && detail?.allowed === false) {
+        setModerationFeedback(detail);
+      } else if (err.response?.status === 401) {
         setError('Your session has expired. Please log in again.');
       } else if (err.response?.status === 403) {
         setError('You do not have permission to submit reviews.');
@@ -60,6 +94,13 @@ const ReviewForm: React.FC<ReviewFormProps> = ({ teacher, onSubmit, onCancel }) 
       console.error('Error submitting review:', err);
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const applyModerationSuggestion = () => {
+    if (moderationFeedback?.suggestion) {
+      setDescription(moderationFeedback.suggestion);
+      setModerationFeedback(null);
     }
   };
 
@@ -81,7 +122,10 @@ const ReviewForm: React.FC<ReviewFormProps> = ({ teacher, onSubmit, onCancel }) 
           <select
             id="course"
             value={courseId}
-            onChange={(e) => setCourseId(e.target.value)}
+            onChange={(e) => {
+              setCourseId(e.target.value);
+              resetModerationFeedback();
+            }}
             required
           >
             <option value="">Select a course</option>
@@ -98,7 +142,10 @@ const ReviewForm: React.FC<ReviewFormProps> = ({ teacher, onSubmit, onCancel }) 
           <textarea
             id="description"
             value={description}
-            onChange={(e) => setDescription(e.target.value)}
+            onChange={(e) => {
+              setDescription(e.target.value);
+              resetModerationFeedback();
+            }}
             placeholder="Share your experience with this teacher and course (minimum 10 characters)"
             rows={5}
             required
@@ -110,6 +157,36 @@ const ReviewForm: React.FC<ReviewFormProps> = ({ teacher, onSubmit, onCancel }) 
         </div>
 
         {error && <div className="form-error">{error}</div>}
+
+        {moderationFeedback && (
+          <div className="moderation-warning" role="alert">
+            <h4>Review needs edits</h4>
+            <p>{moderationFeedback.message}</p>
+            {moderationFeedback.blockedReasons.length > 0 && (
+              <div className="moderation-reasons">
+                {moderationFeedback.blockedReasons.map((reason) => (
+                  <span key={reason} className="moderation-pill">
+                    {reason.replace('_', ' ')}
+                  </span>
+                ))}
+              </div>
+            )}
+            {moderationFeedback.suggestion && (
+              <div className="moderation-suggestion">
+                <strong>Try this focus:</strong>
+                <p>{moderationFeedback.suggestion}</p>
+                <button
+                  type="button"
+                  className="inline-btn"
+                  onClick={applyModerationSuggestion}
+                  disabled={submitting}
+                >
+                  Use suggestion
+                </button>
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="form-actions">
           <button 

@@ -2,12 +2,13 @@ from fastapi import FastAPI, Depends, HTTPException, status, Response
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from typing import List
+from typing import List, Optional
 from app import models, schemas
 from app.database import engine, get_db
 from app.auth import router as auth_router
 from app.admin import router as admin_router
 from app.security import require_roles
+from app.services.moderation import ModerationClient, get_moderation_client
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -23,6 +24,12 @@ app.add_middleware(
 
 app.include_router(auth_router)
 app.include_router(admin_router)
+
+_moderation_client = get_moderation_client()
+
+
+def moderation_dependency() -> ModerationClient:
+    return _moderation_client
 
 @app.get("/")
 def read_root():
@@ -164,6 +171,22 @@ def get_reviews(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     reviews = db.query(models.Review).offset(skip).limit(limit).all()
     return reviews
 
+
+@app.get(
+    "/api/reviews/moderation-log",
+    response_model=List[schemas.Review],
+    dependencies=[Depends(require_roles("admin"))],
+)
+def get_moderation_log(
+    teacher_id: Optional[int] = None,
+    db: Session = Depends(get_db),
+):
+    query = db.query(models.Review).filter(models.Review.moderation_allowed.is_(False))
+    if teacher_id is not None:
+        query = query.filter(models.Review.teacher_id == teacher_id)
+    reviews = query.order_by(models.Review.created_at.desc()).all()
+    return reviews
+
 @app.get("/api/reviews/{review_id}", response_model=schemas.Review)
 def get_review(review_id: int, db: Session = Depends(get_db)):
     review = db.query(models.Review).filter(models.Review.id == review_id).first()
@@ -176,17 +199,80 @@ def get_teacher_reviews(teacher_id: int, db: Session = Depends(get_db)):
     reviews = db.query(models.Review).filter(models.Review.teacher_id == teacher_id).all()
     return reviews
 
-@app.post("/api/reviews", response_model=schemas.Review, dependencies=[Depends(require_roles("admin", "editor", "viewer"))])
-def create_review(review: schemas.ReviewCreate, db: Session = Depends(get_db)):
+@app.post(
+    "/api/reviews/moderate",
+    response_model=schemas.ReviewModerationResponse,
+    dependencies=[Depends(require_roles("admin", "editor", "viewer"))],
+)
+async def moderate_review(
+    payload: schemas.ReviewModerationRequest,
+    db: Session = Depends(get_db),
+    moderation_client: ModerationClient = Depends(moderation_dependency),
+):
+    teacher = db.query(models.Teacher).filter(models.Teacher.id == payload.teacher_id).first()
+    if not teacher:
+        raise HTTPException(status_code=404, detail="Teacher not found")
+
+    course = db.query(models.Course).filter(models.Course.id == payload.course_id).first()
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+
+    if course.teacher_id != teacher.id:
+        raise HTTPException(status_code=422, detail="Course does not belong to the specified teacher")
+
+    verdict = await moderation_client.evaluate(
+        text=payload.text,
+        teacher_name=teacher.name,
+        course_title=course.name,
+    )
+
+    response_payload = schemas.ReviewModerationResponse.from_verdict(verdict)
+    if verdict.allowed:
+        return response_payload
+
+    raise HTTPException(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        detail=response_payload.model_dump(by_alias=True),
+    )
+
+
+@app.post(
+    "/api/reviews",
+    response_model=schemas.Review,
+    dependencies=[Depends(require_roles("admin", "editor", "viewer"))],
+)
+async def create_review(
+    review: schemas.ReviewCreate,
+    db: Session = Depends(get_db),
+    moderation_client: ModerationClient = Depends(moderation_dependency),
+):
     teacher = db.query(models.Teacher).filter(models.Teacher.id == review.teacher_id).first()
     if not teacher:
         raise HTTPException(status_code=404, detail="Teacher not found")
-    
+
     course = db.query(models.Course).filter(models.Course.id == review.course_id).first()
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")
-    
+
+    verdict = await moderation_client.evaluate(
+        text=review.description,
+        teacher_name=teacher.name,
+        course_title=course.name,
+    )
+
+    if not verdict.allowed:
+        warning = schemas.ReviewModerationResponse.from_verdict(verdict)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=warning.model_dump(by_alias=True),
+        )
+
     db_review = models.Review(**review.dict())
+    db_review.moderation_allowed = verdict.allowed
+    db_review.moderation_blocked_reasons = verdict.blocked_reasons
+    db_review.moderation_scores = verdict.scores
+    db_review.moderation_model_version = verdict.model_version
+    db_review.moderation_message = verdict.message
     db.add(db_review)
     db.commit()
     db.refresh(db_review)

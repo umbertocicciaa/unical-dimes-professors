@@ -60,6 +60,65 @@
   font-size: 0.9rem;
 }
 
+.moderation-warning {
+  background: #fff7e6;
+  border: 1px solid #ffb74d;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  color: #8c6d1f;
+}
+
+.moderation-warning h4 {
+  margin: 0 0 0.5rem 0;
+}
+
+.moderation-reasons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.moderation-pill {
+  background: #ffe0b2;
+  color: #8c6d1f;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  text-transform: capitalize;
+}
+
+.moderation-suggestion {
+  margin-top: 0.75rem;
+  background: #fff3d7;
+  padding: 0.75rem;
+  border-radius: 6px;
+}
+
+.moderation-suggestion p {
+  margin: 0.5rem 0;
+}
+
+.inline-btn {
+  background: #ff9800;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.inline-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.inline-btn:hover:not(:disabled) {
+  background: #fb8c00;
+}
+
 .form-actions {
   display: flex;
   gap: 1rem;

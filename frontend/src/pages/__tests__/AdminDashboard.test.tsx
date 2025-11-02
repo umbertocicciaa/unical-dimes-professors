@@ -122,11 +122,12 @@ describe('AdminDashboard', () => {
     await userEvent.click(screen.getByRole('button', { name: /Users & Roles/i }));
     await waitFor(() => expect(screen.getByText('editor@example.com')).toBeInTheDocument());
 
-    const row = screen.getByText('editor@example.com').closest('tr') as HTMLElement;
-
-    await waitFor(() => expect(within(row).getByLabelText('viewer')).toBeChecked());
+    const userRow = screen.getByText('editor@example.com').closest('tr');
+    expect(userRow).not.toBeNull();
+    const row = userRow as HTMLElement;
 
     const viewerCheckbox = within(row).getByLabelText('viewer') as HTMLInputElement;
+    expect(viewerCheckbox.checked).toBe(true);
     await userEvent.click(viewerCheckbox);
 
     const editorCheckbox = within(row).getByLabelText('editor') as HTMLInputElement;

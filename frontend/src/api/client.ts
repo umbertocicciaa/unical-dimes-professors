@@ -62,6 +62,11 @@ export interface Review {
   rating: number;
   description: string;
   created_at: string;
+  moderation_allowed?: boolean;
+  moderation_blocked_reasons?: string[] | null;
+  moderation_scores?: Record<string, number> | null;
+  moderation_model_version?: string | null;
+  moderation_message?: string | null;
 }
 
 export interface CreateReview {
@@ -69,6 +74,22 @@ export interface CreateReview {
   course_id: number;
   rating: number;
   description: string;
+}
+
+export interface ReviewModerationRequest {
+  teacher_id: number;
+  course_id: number;
+  text: string;
+  rating?: number;
+}
+
+export interface ReviewModerationVerdict {
+  allowed: boolean;
+  blockedReasons: string[];
+  message: string;
+  scores: Record<string, number>;
+  modelVersion: string;
+  suggestion?: string | null;
 }
 
 export interface CreateTeacher {
@@ -141,6 +162,7 @@ export const apiClient = {
 
   getReviews: () => api.get<Review[]>('/api/reviews'),
   getTeacherReviews: (teacherId: number) => api.get<Review[]>(`/api/teachers/${teacherId}/reviews`),
+  moderateReview: (data: ReviewModerationRequest) => api.post<ReviewModerationVerdict>('/api/reviews/moderate', data),
   createReview: (data: CreateReview) => api.post<Review>('/api/reviews', data),
   updateReview: (id: number, data: UpdateReview) => api.put<Review>(`/api/reviews/${id}`, data),
   deleteReview: (id: number) => api.delete<void>(`/api/reviews/${id}`),

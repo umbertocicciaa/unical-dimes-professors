@@ -1,4 +1,14 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Text, Boolean, UniqueConstraint
+from sqlalchemy import (
+    Column,
+    Integer,
+    String,
+    ForeignKey,
+    DateTime,
+    Text,
+    Boolean,
+    UniqueConstraint,
+    JSON,
+)
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from app.database import Base
@@ -34,7 +44,12 @@ class Review(Base):
     rating = Column(Integer, nullable=False)
     description = Column(Text, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
-    
+    moderation_allowed = Column(Boolean, nullable=False, default=True)
+    moderation_blocked_reasons = Column(JSON, nullable=True)
+    moderation_scores = Column(JSON, nullable=True)
+    moderation_model_version = Column(String, nullable=True)
+    moderation_message = Column(String, nullable=True)
+
     teacher = relationship("Teacher", back_populates="reviews")
     course = relationship("Course", back_populates="reviews")
 
