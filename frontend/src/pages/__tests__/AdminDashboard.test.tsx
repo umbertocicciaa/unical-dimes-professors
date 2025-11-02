@@ -3,30 +3,28 @@ import userEvent from '@testing-library/user-event';
 import AdminDashboard from '../AdminDashboard';
 import { useAuth } from '../../context/AuthContext';
 
-const mockApiClient = {
-  getTeachers: jest.fn(),
-  getCourses: jest.fn(),
-  getReviews: jest.fn(),
-  createTeacher: jest.fn(),
-  updateTeacher: jest.fn(),
-  deleteTeacher: jest.fn(),
-  createCourse: jest.fn(),
-  updateCourse: jest.fn(),
-  deleteCourse: jest.fn(),
-  updateReview: jest.fn(),
-  deleteReview: jest.fn(),
-};
-
-const mockAdminApi = {
-  getRoles: jest.fn(),
-  getUsers: jest.fn(),
-  updateUser: jest.fn(),
-};
-
 jest.mock('../../api/client', () => ({
-  apiClient: mockApiClient,
-  adminApi: mockAdminApi,
+  apiClient: {
+    getTeachers: jest.fn(),
+    getCourses: jest.fn(),
+    getReviews: jest.fn(),
+    createTeacher: jest.fn(),
+    updateTeacher: jest.fn(),
+    deleteTeacher: jest.fn(),
+    createCourse: jest.fn(),
+    updateCourse: jest.fn(),
+    deleteCourse: jest.fn(),
+    updateReview: jest.fn(),
+    deleteReview: jest.fn(),
+  },
+  adminApi: {
+    getRoles: jest.fn(),
+    getUsers: jest.fn(),
+    updateUser: jest.fn(),
+  },
 }));
+
+const { apiClient: mockApiClient, adminApi: mockAdminApi } = jest.requireMock('../../api/client');
 
 jest.mock('../../context/AuthContext');
 const mockedUseAuth = useAuth as jest.Mock;
@@ -121,14 +119,14 @@ describe('AdminDashboard', () => {
 
   it('allows updating user roles and status', async () => {
     renderDashboard();
+    await userEvent.click(screen.getByRole('button', { name: /Users & Roles/i }));
     await waitFor(() => expect(screen.getByText('editor@example.com')).toBeInTheDocument());
 
-    const userRow = screen.getByText('editor@example.com').closest('tr');
-    expect(userRow).not.toBeNull();
-    const row = userRow as HTMLElement;
+    const row = screen.getByText('editor@example.com').closest('tr') as HTMLElement;
+
+    await waitFor(() => expect(within(row).getByLabelText('viewer')).toBeChecked());
 
     const viewerCheckbox = within(row).getByLabelText('viewer') as HTMLInputElement;
-    expect(viewerCheckbox.checked).toBe(true);
     await userEvent.click(viewerCheckbox);
 
     const editorCheckbox = within(row).getByLabelText('editor') as HTMLInputElement;

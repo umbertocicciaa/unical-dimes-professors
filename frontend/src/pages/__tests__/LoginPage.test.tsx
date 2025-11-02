@@ -2,6 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import LoginPage from '../LoginPage';
 import { useAuth } from '../../context/AuthContext';
+import { MemoryRouter } from 'react-router-dom';
 
 jest.mock('../../context/AuthContext');
 const mockedUseAuth = useAuth as jest.Mock;
@@ -17,11 +18,18 @@ describe('LoginPage', () => {
     jest.clearAllMocks();
   });
 
+  const renderWithRouter = () =>
+    render(
+      <MemoryRouter>
+        <LoginPage />
+      </MemoryRouter>,
+    );
+
   it('submits credentials and navigates on success', async () => {
     const login = jest.fn().mockResolvedValue(undefined);
     mockedUseAuth.mockReturnValue({ login });
 
-    render(<LoginPage />);
+    renderWithRouter();
 
     await userEvent.type(screen.getByLabelText(/Email/i), 'user@example.com');
     await userEvent.type(screen.getByLabelText(/Password/i), 'Password123!');
@@ -40,7 +48,7 @@ describe('LoginPage', () => {
     });
     mockedUseAuth.mockReturnValue({ login });
 
-    render(<LoginPage />);
+    renderWithRouter();
 
     await userEvent.type(screen.getByLabelText(/Email/i), 'user@example.com');
     await userEvent.type(screen.getByLabelText(/Password/i), 'Password123!');

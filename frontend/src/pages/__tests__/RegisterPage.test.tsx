@@ -2,6 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import RegisterPage from '../RegisterPage';
 import { useAuth } from '../../context/AuthContext';
+import { MemoryRouter } from 'react-router-dom';
 
 jest.mock('../../context/AuthContext');
 const mockedUseAuth = useAuth as jest.Mock;
@@ -17,6 +18,13 @@ describe('RegisterPage', () => {
     jest.clearAllMocks();
   });
 
+  const renderWithRouter = () =>
+    render(
+      <MemoryRouter>
+        <RegisterPage />
+      </MemoryRouter>,
+    );
+
   const fillForm = async () => {
     await userEvent.type(screen.getByLabelText(/^Email/), 'user@example.com');
     await userEvent.type(screen.getByLabelText(/^Password/), 'Password123!');
@@ -25,7 +33,7 @@ describe('RegisterPage', () => {
 
   it('blocks submission when passwords do not match', async () => {
     mockedUseAuth.mockReturnValue({ register: jest.fn() });
-    render(<RegisterPage />);
+    renderWithRouter();
     await userEvent.type(screen.getByLabelText(/^Email/), 'user@example.com');
     await userEvent.type(screen.getByLabelText(/^Password/), 'Password123!');
     await userEvent.type(screen.getByLabelText(/Confirm Password/), 'Mismatch123!');
@@ -38,7 +46,7 @@ describe('RegisterPage', () => {
     const register = jest.fn().mockResolvedValue(undefined);
     mockedUseAuth.mockReturnValue({ register });
 
-    render(<RegisterPage />);
+    renderWithRouter();
     await fillForm();
     await userEvent.click(screen.getByRole('button', { name: /Register/i }));
 
@@ -54,7 +62,7 @@ describe('RegisterPage', () => {
     });
     mockedUseAuth.mockReturnValue({ register });
 
-    render(<RegisterPage />);
+    renderWithRouter();
     await fillForm();
     await userEvent.click(screen.getByRole('button', { name: /Register/i }));
 

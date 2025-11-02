@@ -76,9 +76,10 @@ describe('TeacherDetail', () => {
     await waitFor(() => expect(screen.getByText('Grace Hopper')).toBeInTheDocument());
     expect(screen.getByText('Compiler Design')).toBeInTheDocument();
     expect(screen.getByText(/Inspiring lectures/i)).toBeInTheDocument();
-    expect(screen.getByText('Add Review')).toBeInTheDocument();
+    const addReviewButton = screen.getByRole('button', { name: /\+ Add Review/i });
+    expect(addReviewButton).toBeInTheDocument();
 
-    await userEvent.click(screen.getByText('Add Review'));
+    await userEvent.click(addReviewButton);
     expect(screen.getByText('Write a Review')).toBeInTheDocument();
   });
 
@@ -91,7 +92,7 @@ describe('TeacherDetail', () => {
 
     renderWithRoute();
     await waitFor(() => expect(mockedGetTeacher).toHaveBeenCalled());
-    expect(screen.getByText(/Login to add a review/i)).toBeInTheDocument();
+    expect(await screen.findByRole('link', { name: /Login to add a review/i })).toBeInTheDocument();
   });
 
   it('shows an error when loading fails', async () => {
