@@ -104,6 +104,9 @@ const ReviewForm: React.FC<ReviewFormProps> = ({ teacher, onSubmit, onCancel }) 
     }
   };
 
+  const isLanguageBlock = moderationFeedback?.blockedReasons.includes('UNSUPPORTED_LANGUAGE');
+  const shouldShowSuggestionButton = Boolean(moderationFeedback?.suggestion) && !isLanguageBlock;
+
   return (
     <div className="review-form">
       <h3>Write a Review</h3>
@@ -175,14 +178,16 @@ const ReviewForm: React.FC<ReviewFormProps> = ({ teacher, onSubmit, onCancel }) 
               <div className="moderation-suggestion">
                 <strong>Try this focus:</strong>
                 <p>{moderationFeedback.suggestion}</p>
-                <button
-                  type="button"
-                  className="inline-btn"
-                  onClick={applyModerationSuggestion}
-                  disabled={submitting}
-                >
-                  Use suggestion
-                </button>
+                {shouldShowSuggestionButton && (
+                  <button
+                    type="button"
+                    className="inline-btn"
+                    onClick={applyModerationSuggestion}
+                    disabled={submitting}
+                  >
+                    Use suggestion
+                  </button>
+                )}
               </div>
             )}
           </div>

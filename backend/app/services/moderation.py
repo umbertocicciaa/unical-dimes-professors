@@ -6,8 +6,34 @@ from dataclasses import dataclass
 from typing import Dict, List, Optional, Protocol
 import re
 
+from langdetect import DetectorFactory, LangDetectException, detect_langs
 
-MODERATION_LABELS = ("OFFENSIVE_LANGUAGE", "PERSONAL_ATTACK", "IRRELEVANT_CONTENT", "SAFE")
+
+DetectorFactory.seed = 0
+
+
+MODERATION_LABELS = (
+    "OFFENSIVE_LANGUAGE",
+    "PERSONAL_ATTACK",
+    "IRRELEVANT_CONTENT",
+    "UNSUPPORTED_LANGUAGE",
+    "SAFE",
+)
+SUPPORTED_LANGUAGES = {"en", "it"}
+SUPPORTED_LANGUAGE_LABELS = {"en": "English", "it": "Italian"}
+LANGUAGE_NAME_OVERRIDES = {
+    "en": "English",
+    "it": "Italian",
+    "es": "Spanish",
+    "fr": "French",
+    "de": "German",
+    "pt": "Portuguese",
+    "ro": "Romanian",
+    "pl": "Polish",
+    "ru": "Russian",
+    "zh-cn": "Chinese",
+    "zh-tw": "Chinese",
+}
 
 
 @dataclass
@@ -82,14 +108,31 @@ class LocalModerationClient:
             irrelevant_hits += 1
         scores["IRRELEVANT_CONTENT"] = min(1.0, irrelevant_hits * 0.2)
 
-        max_risk = max(scores["OFFENSIVE_LANGUAGE"], scores["PERSONAL_ATTACK"], scores["IRRELEVANT_CONTENT"])
+        detected_language = self._detect_language(clean_text)
+        if detected_language and detected_language not in SUPPORTED_LANGUAGES:
+            scores["UNSUPPORTED_LANGUAGE"] = 1.0
+
+        max_risk = max(
+            scores["OFFENSIVE_LANGUAGE"],
+            scores["PERSONAL_ATTACK"],
+            scores["IRRELEVANT_CONTENT"],
+            scores["UNSUPPORTED_LANGUAGE"],
+        )
         scores["SAFE"] = max(0.0, 1.0 - max_risk)
 
         blocked_reasons = [label for label in MODERATION_LABELS if label != "SAFE" and scores[label] >= self._block_threshold]
 
         allowed = not blocked_reasons
         message = self._build_message(allowed=allowed, blocked_reasons=blocked_reasons)
-        suggestion = None if allowed else self._build_suggestion(clean_text, teacher_name, course_title)
+        suggestion = None
+        if not allowed:
+            suggestion = self._build_suggestion(
+                text=clean_text,
+                teacher_name=teacher_name,
+                course_title=course_title,
+                blocked_reasons=blocked_reasons,
+                detected_language=detected_language,
+            )
 
         return ModerationVerdict(
             allowed=allowed,
@@ -109,9 +152,29 @@ class LocalModerationClient:
             return "Keep the feedback about teaching quality instead of personal attacks."
         if "IRRELEVANT_CONTENT" in blocked_reasons:
             return "Please focus on course and teaching details to help other students."
+        if "UNSUPPORTED_LANGUAGE" in blocked_reasons:
+            return "Reviews must be written in English or Italian."
         return "We could not approve this review. Please make it about the teaching experience."
 
-    def _build_suggestion(self, text: str, teacher_name: str, course_title: str) -> str:
+    def _build_suggestion(
+        self,
+        *,
+        text: str,
+        teacher_name: str,
+        course_title: str,
+        blocked_reasons: List[str],
+        detected_language: Optional[str],
+    ) -> str:
+        if "UNSUPPORTED_LANGUAGE" in blocked_reasons:
+            supported_names = [SUPPORTED_LANGUAGE_LABELS[code] for code in sorted(SUPPORTED_LANGUAGES)]
+            if len(supported_names) == 2:
+                supported = " or ".join(supported_names)
+            else:
+                supported = ", ".join(supported_names)
+            language_hint = (
+                f"Detected language: {LANGUAGE_NAME_OVERRIDES.get(detected_language, detected_language)}." if detected_language else "We could not detect the language."
+            )
+            return f"Please rewrite the review in {supported}. {language_hint}"
         fallback_teacher = teacher_name or "the professor"
         fallback_course = course_title or "the course"
         neutral_text = re.sub(r"[^\w\s]", "", text)
@@ -122,6 +185,20 @@ class LocalModerationClient:
             f"Focus on specific teaching aspects. For example: '{fallback_teacher} explained key concepts clearly in {fallback_course} and the assignments matched the lectures.'"
         )
 
+    def _detect_language(self, text: str) -> Optional[str]:
+        try:
+            probabilities = detect_langs(text)
+        except LangDetectException:
+            return None
+
+        if not probabilities:
+            return None
+
+        top_candidate = max(probabilities, key=lambda candidate: candidate.prob)
+        if top_candidate.prob < 0.6:
+            return None
+        return top_candidate.lang
+
 
 _singleton_client: Optional[LocalModerationClient] = None
 
@@ -131,4 +208,3 @@ def get_moderation_client() -> LocalModerationClient:
     if _singleton_client is None:
         _singleton_client = LocalModerationClient()
     return _singleton_client
-

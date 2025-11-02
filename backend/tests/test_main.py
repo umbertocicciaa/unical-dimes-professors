@@ -173,6 +173,89 @@ def test_create_review_requires_existing_entities(client, session):
     assert response.json()["detail"] == "Teacher not found"
 
 
+def test_moderate_review_allows_constructive_text(client, session):
+    user = create_user(session, email="moderation_ok@example.com", roles=("viewer",))
+    teacher = create_teacher(session, name="Helpful Teacher")
+    course = create_course(session, teacher, name="Insightful Course")
+    headers = auth_headers(user, roles=("viewer",))
+
+    payload = {
+        "teacher_id": teacher.id,
+        "course_id": course.id,
+        "text": "Great explanations and helpful office hours.",
+        "rating": 5,
+    }
+
+    response = client.post("/api/reviews/moderate", json=payload, headers=headers)
+    assert response.status_code == status.HTTP_200_OK
+    data = response.json()
+    assert data["allowed"] is True
+    assert data["blockedReasons"] == []
+    assert data["modelVersion"]
+
+
+def test_moderate_review_blocks_offensive_text(client, session):
+    user = create_user(session, email="moderation_block@example.com", roles=("viewer",))
+    teacher = create_teacher(session, name="Strict Teacher")
+    course = create_course(session, teacher, name="Hard Course")
+    headers = auth_headers(user, roles=("viewer",))
+
+    payload = {
+        "teacher_id": teacher.id,
+        "course_id": course.id,
+        "text": "This professor is an idiot and their class sucks.",
+        "rating": 1,
+    }
+
+    response = client.post("/api/reviews/moderate", json=payload, headers=headers)
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    detail = response.json()["detail"]
+    assert detail["allowed"] is False
+    assert "PERSONAL_ATTACK" in detail["blockedReasons"]
+    assert detail["message"]
+
+
+def test_moderate_review_rejects_unsupported_language(client, session):
+    user = create_user(session, email="language_block@example.com", roles=("viewer",))
+    teacher = create_teacher(session, name="Language Teacher")
+    course = create_course(session, teacher, name="Language Course")
+    headers = auth_headers(user, roles=("viewer",))
+
+    payload = {
+        "teacher_id": teacher.id,
+        "course_id": course.id,
+        "text": "Este profesor explica muy bien la materia.",
+        "rating": 5,
+    }
+
+    response = client.post("/api/reviews/moderate", json=payload, headers=headers)
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    detail = response.json()["detail"]
+    assert detail["allowed"] is False
+    assert "UNSUPPORTED_LANGUAGE" in detail["blockedReasons"]
+    assert "English or Italian" in detail["message"]
+
+
+def test_create_review_rejects_unsupported_language(client, session):
+    user = create_user(session, email="language_submit@example.com", roles=("viewer",))
+    teacher = create_teacher(session, name="Language Submit Teacher")
+    course = create_course(session, teacher, name="Language Submit Course")
+    headers = auth_headers(user, roles=("viewer",))
+
+    payload = {
+        "teacher_id": teacher.id,
+        "course_id": course.id,
+        "rating": 4,
+        "description": "Este profesor es increíble.",
+    }
+
+    response = client.post("/api/reviews", json=payload, headers=headers)
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    detail = response.json()["detail"]
+    assert detail["allowed"] is False
+    assert "UNSUPPORTED_LANGUAGE" in detail["blockedReasons"]
+
+
 def test_update_review_validations(client, session):
     admin = create_user(session, email="review_admin@example.com", roles=("admin",))
     teacher = create_teacher(session, name="Review Admin Teacher")
