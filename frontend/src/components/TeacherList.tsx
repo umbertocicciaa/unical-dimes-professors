@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useInRouterContext } from 'react-router-dom';
 import { apiClient, Teacher } from '../api/client';
 import StarRating from './StarRating';
 import './TeacherList.css';
@@ -27,6 +27,8 @@ const TeacherList: React.FC = () => {
     }
   };
 
+  const inRouter = useInRouterContext();
+
   if (loading) {
     return <div className="loading">Loading teachers...</div>;
   }
@@ -34,6 +36,21 @@ const TeacherList: React.FC = () => {
   if (error) {
     return <div className="error">{error}</div>;
   }
+
+  const TeacherCardWrapper: React.FC<{ to: string; className: string; children: React.ReactNode }> = ({ to, className, children }) => {
+    if (inRouter) {
+      return (
+        <Link to={to} className={className}>
+          {children}
+        </Link>
+      );
+    }
+    return (
+      <div className={className} data-navigate-to={to}>
+        {children}
+      </div>
+    );
+  };
 
   return (
     <div className="teacher-list">
@@ -47,9 +64,9 @@ const TeacherList: React.FC = () => {
       ) : (
         <div className="teachers-grid">
           {teachers.map((teacher) => (
-            <Link 
-              to={`/teacher/${teacher.id}`} 
-              key={teacher.id} 
+            <TeacherCardWrapper
+              to={`/teacher/${teacher.id}`}
+              key={teacher.id}
               className="teacher-card"
             >
               <div className="teacher-header">
@@ -80,7 +97,7 @@ const TeacherList: React.FC = () => {
                 <span>{teacher.review_count} review{teacher.review_count !== 1 ? 's' : ''}</span>
                 <span>{teacher.courses.length} course{teacher.courses.length !== 1 ? 's' : ''}</span>
               </div>
-            </Link>
+            </TeacherCardWrapper>
           ))}
         </div>
       )}

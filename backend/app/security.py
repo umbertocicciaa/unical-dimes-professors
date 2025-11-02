@@ -1,5 +1,6 @@
 import hashlib
-from datetime import datetime, timedelta
+import secrets
+from datetime import datetime, timedelta, timezone
 from typing import Callable, Optional, Sequence
 
 from fastapi import Depends, HTTPException, status
@@ -35,26 +36,27 @@ def verify_password(password: str, password_hash: str) -> bool:
 
 
 def _base_token_payload(user_id: int, roles: Sequence[str]) -> dict:
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     return {
         "sub": str(user_id),
         "roles": list(roles),
         "iss": AUTH_ISSUER,
         "aud": AUTH_AUDIENCE,
         "iat": int(now.timestamp()),
+        "jti": secrets.token_urlsafe(8),
     }
 
 
 def create_access_token(user_id: int, roles: Sequence[str], expires_delta: Optional[timedelta] = None) -> str:
     payload = _base_token_payload(user_id, roles)
-    expire = datetime.utcnow() + (expires_delta or access_token_ttl())
+    expire = datetime.now(timezone.utc) + (expires_delta or access_token_ttl())
     payload.update({"exp": int(expire.timestamp())})
     return jwt.encode(payload, AUTH_SECRET_KEY, algorithm=JWT_ALGORITHM)
 
 
 def create_refresh_token(user_id: int, roles: Sequence[str], expires_delta: Optional[timedelta] = None) -> str:
     payload = _base_token_payload(user_id, roles)
-    expire = datetime.utcnow() + (expires_delta or refresh_token_ttl())
+    expire = datetime.now(timezone.utc) + (expires_delta or refresh_token_ttl())
     payload.update({"exp": int(expire.timestamp())})
     return jwt.encode(payload, AUTH_REFRESH_SECRET, algorithm=JWT_ALGORITHM)
 

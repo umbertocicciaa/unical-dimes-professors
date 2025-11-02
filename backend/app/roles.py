@@ -22,6 +22,7 @@ def assign_roles_by_name(user: models.User, role_names: Iterable[str], db: Sessi
     requested = list(role_names)
     if not requested:
         user.roles = []
+        db.flush()
         return
 
     roles: List[models.Role] = (
@@ -35,6 +36,7 @@ def assign_roles_by_name(user: models.User, role_names: Iterable[str], db: Sessi
         missing = unique_requested - {role.name for role in roles}
         raise ValueError(f"Roles not found: {', '.join(sorted(missing))}")
     user.roles = roles
+    db.flush()
 
 
 def get_or_create_role(db: Session, role_name: str, description: Optional[str] = None) -> models.Role:
